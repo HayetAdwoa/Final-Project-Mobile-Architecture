@@ -1,0 +1,54 @@
+
+
+services:
+
+  postgres-auth:
+    image: postgres:16
+    container_name: postgres-auth
+    restart: always
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+      POSTGRES_DB: authdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-auth:/var/lib/postgresql/data
+
+  postgres-main:
+    image: postgres:16
+    container_name: postgres-main
+    restart: always
+    environment:
+      POSTGRES_USER: main_user
+      POSTGRES_PASSWORD: main_pass
+      POSTGRES_DB: maindb
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata-main:/var/lib/postgresql/data
+
+  mongo-dispatch:
+    image: mongo:7
+    container_name: mongo-dispatch
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+volumes:
+  pgdata-auth:
+  pgdata-main:
+  mongodata:
