@@ -1,0 +1,324 @@
+/* ============================================================
+   NERDCP — Command Center Theme  v2
+   Aesthetic: Military Ops / Emergency Dispatch — Lighter Navy
+   Fonts: Barlow Condensed (display) + JetBrains Mono (data) + Inter (body)
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Core Palette — slightly lighter blues */
+  --bg-base:        #0d1829;
+  --bg-surface:     #132035;
+  --bg-elevated:    #1a2d4a;
+  --bg-card:        #162740;
+  --border:         #263f63;
+  --border-bright:  #3a5a8a;
+
+  /* Text */
+  --text-primary:   #eef3ff;
+  --text-secondary: #a0bcdc;
+  --text-muted:     #5a7aa0;
+  --text-mono:      #70c8ff;
+
+  /* Accent — Emergency Red */
+  --red:            #ff2d4a;
+  --red-dim:        #cc2038;
+  --red-glow:       rgba(255, 45, 74, 0.25);
+
+  /* Status Colors */
+  --green:          #00e676;
+  --green-dim:      rgba(0, 230, 118, 0.15);
+  --yellow:         #ffb300;
+  --yellow-dim:     rgba(255, 179, 0, 0.15);
+  --blue:           #4d9fff;
+  --blue-dim:       rgba(77, 159, 255, 0.15);
+  --orange:         #ff6d00;
+
+  /* Role Colors */
+  --police-blue:    #1976d2;
+  --fire-orange:    #f4511e;
+  --hospital-teal:  #00897b;
+
+  /* Sizing */
+  --sidebar-w:      248px;
+  --header-h:       62px;
+  --radius-sm:      5px;
+  --radius-md:      10px;
+  --radius-lg:      14px;
+
+  /* Fonts */
+  --font-display:   'Barlow Condensed', sans-serif;
+  --font-body:      'Inter', sans-serif;
+  --font-mono:      'JetBrains Mono', monospace;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+/* ── Typography ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.mono { font-family: var(--font-mono); }
+
+/* ── Utilities ── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ── Animations ── */
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes blink-dot {
+  0%, 100% { background: var(--green); }
+  50% { background: transparent; }
+}
+
+.animate-fade-up {
+  animation: fade-in-up 0.4s ease forwards;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.35rem;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ── Badge / Status Pill ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.65rem;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.badge-red    { background: var(--red-glow); color: var(--red); border: 1px solid var(--red); }
+.badge-green  { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+.badge-yellow { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow); }
+.badge-blue   { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue); }
+
+/* ── Button ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-primary {
+  background: var(--red);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--red-dim); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,45,74,0.3); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+}
+.btn-secondary:hover { border-color: var(--blue); color: var(--blue); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+}
+.btn-ghost:hover { color: var(--text-primary); }
+
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Input ── */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.input-label {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.9rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(77, 159, 255, 0.14);
+}
+.input::placeholder { color: var(--text-muted); }
+select.input { cursor: pointer; }
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+td {
+  padding: 0.75rem 0.8rem;
+  border-bottom: 1px solid rgba(38, 63, 99, 0.5);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+tr:hover td { background: rgba(255,255,255,0.018); }
+tr:last-child td { border-bottom: none; }
+
+/* ── Live Dot ── */
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: blink-dot 1.2s infinite;
+  display: inline-block;
+}
+
+/* ── Stat Tile ── */
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.stat-tile .stat-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.stat-tile .stat-value {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.stat-tile .stat-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── Grid ── */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* ── Leaflet overrides ── */
+.leaflet-container {
+  background: #0d1829 !important;
+  font-family: var(--font-body) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(13,24,41,0.85) !important;
+  color: var(--text-muted) !important;
+  font-size: 10px !important;
+}
+.leaflet-popup-content-wrapper {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+}
+.leaflet-popup-tip { background: var(--bg-elevated) !important; }

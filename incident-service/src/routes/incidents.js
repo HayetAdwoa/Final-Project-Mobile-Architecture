@@ -10,14 +10,8 @@ const RESPONDER_SERVICE_URL = process.env.RESPONDER_SERVICE_URL;
 router.post('/', async (req, res) => {
   try {
     const {
-      citizen_name,
-      citizen_phone,
-      incident_type,
-      latitude,
-      longitude,
-      location_description,
-      notes,
-      created_by,
+      citizen_name, citizen_phone, incident_type,
+      latitude, longitude, location_description, notes, created_by,
     } = req.body;
 
     // 1. Create incident
@@ -30,32 +24,55 @@ router.post('/', async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'CREATED')
        RETURNING *`,
       [citizen_name, citizen_phone, incident_type,
-       latitude, longitude, location_description,
-       notes, created_by]
+       latitude, longitude, location_description, notes, created_by]
     );
     const incident = result.rows[0];
 
-    // 2. Find nearest responder
-    const resp = await axios.get(
-      `${RESPONDER_SERVICE_URL}/responders/nearest`,
-      { params: { lat: latitude, lon: longitude, type: incident_type } }
-    );
-    const assigned = resp.data;
+    // 2. Try to find nearest responder
+    let assigned = null;
+    try {
+      const resp = await axios.get(
+        `${RESPONDER_SERVICE_URL}/responders/nearest`,
+        { params: { lat: latitude, lon: longitude, type: incident_type } }
+      );
+      assigned = resp.data;
+    } catch (respErr) {
+      console.warn('No available responder:', respErr.response?.data?.error || respErr.message);
+    }
 
-    // 3. Update incident to DISPATCHED
-    const updateRes = await db.query(
-      `UPDATE incidents
-       SET assigned_unit_id = $1,
-           assigned_unit_type = $2,
-           status = 'DISPATCHED',
-           dispatched_at = NOW()
-       WHERE incident_id = $3
-       RETURNING *`,
-      [assigned.unitId, assigned.unitType, incident.incident_id]
-    );
-    const updated = updateRes.rows[0];
+    let updated = incident;
 
-    // 4. Publish events to RabbitMQ
+    if (assigned) {
+      // 3. Update incident to DISPATCHED
+      const updateRes = await db.query(
+        `UPDATE incidents
+         SET assigned_unit_id = $1, assigned_unit_type = $2,
+             status = 'DISPATCHED', dispatched_at = NOW()
+         WHERE incident_id = $3
+         RETURNING *`,
+        [assigned.unitId, assigned.unitType, incident.incident_id]
+      );
+      updated = updateRes.rows[0];
+
+      // 4. Mark responder as ENGAGED
+      try {
+        await axios.put(
+          `${RESPONDER_SERVICE_URL}/responders/${assigned.unitId}/status`,
+          { status: 'ENGAGED' }
+        );
+      } catch (e) {
+        console.warn('Could not update responder status:', e.message);
+      }
+
+      await publishEvent('incident.dispatched', {
+        eventType: 'incident.dispatched',
+        incidentId: updated.incident_id,
+        assignedUnitId: updated.assigned_unit_id,
+        assignedUnitType: updated.assigned_unit_type,
+        dispatchedAt: updated.dispatched_at,
+      });
+    }
+
     await publishEvent('incident.created', {
       eventType: 'incident.created',
       incidentId: updated.incident_id,
@@ -64,14 +81,6 @@ router.post('/', async (req, res) => {
       longitude: updated.longitude,
       createdBy: updated.created_by,
       createdAt: updated.created_at,
-    });
-
-    await publishEvent('incident.dispatched', {
-      eventType: 'incident.dispatched',
-      incidentId: updated.incident_id,
-      assignedUnitId: updated.assigned_unit_id,
-      assignedUnitType: updated.assigned_unit_type,
-      dispatchedAt: updated.dispatched_at,
     });
 
     res.status(201).json(updated);
@@ -101,9 +110,7 @@ router.get('/:id', async (req, res) => {
       'SELECT * FROM incidents WHERE incident_id = $1',
       [req.params.id]
     );
-    if (!result.rows[0]) {
-      return res.status(404).json({ error: 'Incident not found' });
-    }
+    if (!result.rows[0]) return res.status(404).json({ error: 'Incident not found' });
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -120,16 +127,27 @@ router.put('/:id/status', async (req, res) => {
       `UPDATE incidents SET status = $1 ${extra} WHERE incident_id = $2 RETURNING *`,
       [status, req.params.id]
     );
+    const updated = result.rows[0];
 
-    if (status === 'RESOLVED') {
+    // When resolved, free up the responder
+    if (status === 'RESOLVED' && updated.assigned_unit_id) {
+      try {
+        await axios.put(
+          `${RESPONDER_SERVICE_URL}/responders/${updated.assigned_unit_id}/status`,
+          { status: 'AVAILABLE' }
+        );
+      } catch (e) {
+        console.warn('Could not free responder:', e.message);
+      }
+
       await publishEvent('incident.resolved', {
         eventType: 'incident.resolved',
         incidentId: req.params.id,
-        resolvedAt: result.rows[0].resolved_at,
+        resolvedAt: updated.resolved_at,
       });
     }
 
-    res.json(result.rows[0]);
+    res.json(updated);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });
