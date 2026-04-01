@@ -8,11 +8,14 @@ let rabbitEnabled = true;
 async function connectRabbitMQ() {
   if (channel) return channel;
   
-  const rabbitUrl = process.env.RABBITMQ_URL?.trim();
+  let rabbitUrl = process.env.RABBITMQ_URL?.trim();
   if (!rabbitUrl) {
     rabbitEnabled = false;
     console.warn('RabbitMQ disabled: RABBITMQ_URL is not set. Events will not be published.');
     return null;
+  }
+  if (rabbitUrl.startsWith('RABBITMQ_URL=')) {
+    rabbitUrl = rabbitUrl.slice('RABBITMQ_URL='.length).trim();
   }
   if (!/^amqps?:\/\//.test(rabbitUrl)) {
     throw new Error(`Invalid RABBITMQ_URL protocol: ${rabbitUrl}. Expected amqp:// or amqps://`);

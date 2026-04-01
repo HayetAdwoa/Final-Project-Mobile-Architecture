@@ -8,7 +8,12 @@ import axios from 'axios'
 
 const TrackingMap = lazy(() => import('../components/Map/TrackingMap'))
 
-const DISPATCH_URL = ''
+const runtimeDispatchUrl = typeof window !== 'undefined'
+  ? window.__RUNTIME_ENV__?.VITE_DISPATCH_URL
+  : undefined
+const DISPATCH_URL = import.meta.env.VITE_DISPATCH_URL || runtimeDispatchUrl
+  ? `${import.meta.env.VITE_DISPATCH_URL || runtimeDispatchUrl}/vehicles`
+  : '/vehicles'
 
 const STATUS_COLORS = {
   open: 'var(--green)', connecting: 'var(--yellow)',

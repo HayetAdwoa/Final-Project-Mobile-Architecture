@@ -1,8 +1,21 @@
 import axios from 'axios'
 
-// Use relative URLs so Vite proxy forwards to correct service
-// Proxy config in vite.config.js handles the port routing
-const BASE = ''
+function getEnvValue(key) {
+  const value = import.meta.env[key]
+  return value && value !== 'undefined' ? String(value).trim() : undefined
+}
+
+const buildTimeIncidentUrl = getEnvValue('VITE_INCIDENT_URL')
+const runtimeIncidentUrl = typeof window !== 'undefined'
+  ? window.__RUNTIME_ENV__?.VITE_INCIDENT_URL
+  : undefined
+const INCIDENT_BASE_URL = buildTimeIncidentUrl || runtimeIncidentUrl
+
+if (!INCIDENT_BASE_URL && !import.meta.env.DEV) {
+  throw new Error('Missing VITE_INCIDENT_URL in production. Set the incident backend URL in your frontend environment.')
+}
+
+const incidentClient = axios.create({ baseURL: INCIDENT_BASE_URL ? `${INCIDENT_BASE_URL}/incidents` : '/incidents' })
 
 function authHeader() {
   const token = localStorage.getItem('nerdcp_token')
@@ -10,14 +23,14 @@ function authHeader() {
 }
 
 export async function createIncident(payload) {
-  const res = await axios.post(`/incidents`, payload, {
+  const res = await incidentClient.post('/', payload, {
     headers: authHeader()
   })
   return res.data
 }
 
 export async function getIncidents(params = {}) {
-  const res = await axios.get(`/incidents`, {
+  const res = await incidentClient.get('/', {
     headers: authHeader(),
     params
   })
@@ -25,21 +38,21 @@ export async function getIncidents(params = {}) {
 }
 
 export async function getIncidentById(id) {
-  const res = await axios.get(`/incidents/${id}`, {
+  const res = await incidentClient.get(`/${id}`, {
     headers: authHeader()
   })
   return res.data
 }
 
 export async function updateIncidentStatus(id, status) {
-  const res = await axios.put(`/incidents/${id}/status`, { status }, {
+  const res = await incidentClient.put(`/${id}/status`, { status }, {
     headers: authHeader()
   })
   return res.data
 }
 
 export async function dispatchIncident(id) {
-  const res = await axios.post(`/incidents/${id}/dispatch`, {}, {
+  const res = await incidentClient.post(`/${id}/dispatch`, {}, {
     headers: authHeader()
   })
   return res.data
