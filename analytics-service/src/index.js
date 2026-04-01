@@ -82,7 +82,7 @@ async function start() {
     credentials: true,
   };
   app.use(cors(corsOptions));
-  app.options('*', cors(corsOptions));
+  app.options('/*', cors(corsOptions));
   app.use(express.json());
 
   app.use('/analytics', analyticsRoutes);
