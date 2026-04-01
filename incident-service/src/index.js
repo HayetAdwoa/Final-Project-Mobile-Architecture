@@ -18,8 +18,17 @@ const corsOptions = {
   },
   credentials: true,
 };
-app.use(cors(corsOptions));
 
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use('/incidents', incidentRoutes);
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+async function start() {
+  await connectRabbitMQ();
+
+  const PORT = process.env.PORT || 4002;
+  app.listen(PORT, () => {
     console.log(`Incident service running on port ${PORT}`);
   });
 }
