@@ -25,6 +25,81 @@ const createIncidentEventsTable = async () => {
   await db.query(createTableQuery);
 };
 
+const seedSampleIncidentEvents = async () => {
+  const { rows } = await db.query('SELECT COUNT(*) FROM incident_events');
+  if (rows[0].count === '0') {
+    const now = new Date();
+    const events = [
+      {
+        incident_id: 1,
+        incident_type: 'Medical',
+        latitude: 5.6037,
+        longitude: -0.1870,
+        created_at: new Date(now.getTime() - 18 * 60000).toISOString(),
+        assigned_unit_id: 3,
+        assigned_unit_type: 'Hospital',
+        dispatched_at: new Date(now.getTime() - 15 * 60000).toISOString(),
+        resolved_at: new Date(now.getTime() - 5 * 60000).toISOString(),
+        response_time_seconds: 180,
+        resolution_time_seconds: 780,
+      },
+      {
+        incident_id: 2,
+        incident_type: 'Fire',
+        latitude: 5.6148,
+        longitude: -0.2050,
+        created_at: new Date(now.getTime() - 30 * 60000).toISOString(),
+        assigned_unit_id: 2,
+        assigned_unit_type: 'Fire',
+        dispatched_at: new Date(now.getTime() - 27 * 60000).toISOString(),
+        resolved_at: new Date(now.getTime() - 10 * 60000).toISOString(),
+        response_time_seconds: 180,
+        resolution_time_seconds: 1200,
+      },
+      {
+        incident_id: 3,
+        incident_type: 'Police',
+        latitude: 5.6200,
+        longitude: -0.1900,
+        created_at: new Date(now.getTime() - 45 * 60000).toISOString(),
+        assigned_unit_id: 1,
+        assigned_unit_type: 'Police',
+        dispatched_at: new Date(now.getTime() - 42 * 60000).toISOString(),
+        resolved_at: new Date(now.getTime() - 20 * 60000).toISOString(),
+        response_time_seconds: 180,
+        resolution_time_seconds: 1500,
+      },
+    ];
+
+    for (const event of events) {
+      await db.query(
+        `INSERT INTO incident_events (
+          incident_id, incident_type, latitude, longitude, created_at,
+          assigned_unit_id, assigned_unit_type, dispatched_at, resolved_at,
+          response_time_seconds, resolution_time_seconds
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         ON CONFLICT (incident_id) DO NOTHING`,
+        [
+          event.incident_id,
+          event.incident_type,
+          event.latitude,
+          event.longitude,
+          event.created_at,
+          event.assigned_unit_id,
+          event.assigned_unit_type,
+          event.dispatched_at,
+          event.resolved_at,
+          event.response_time_seconds,
+          event.resolution_time_seconds,
+        ]
+      );
+    }
+    console.log('Analytics service: seeded default incident events');
+  } else {
+    console.log('Analytics service: event data already seeded');
+  }
+};
+
 async function handleIncidentEvent(e) {
   const { eventType, incidentId } = e;
 
@@ -67,6 +142,7 @@ async function handleIncidentEvent(e) {
 
 async function start() {
   await createIncidentEventsTable();
+  await seedSampleIncidentEvents();
   const ch = await connectRabbitMQ();
 
   const q = 'analytics-incident-events';

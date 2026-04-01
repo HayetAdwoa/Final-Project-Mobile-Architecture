@@ -40,11 +40,35 @@ const createRespondersTable = async () => {
   await db.query(createTableQuery);
 };
 
+const seedDefaultResponders = async () => {
+  const { rows } = await db.query('SELECT COUNT(*) FROM responders');
+  if (rows[0].count === '0') {
+    const responders = [
+      { name: 'Police Unit 1', type: 'Police', latitude: 5.6037, longitude: -0.1870, organization_id: 1 },
+      { name: 'Fire Truck 7', type: 'Fire', latitude: 5.6148, longitude: -0.2050, organization_id: 2 },
+      { name: 'Hospital EMS 3', type: 'Hospital', latitude: 5.6248, longitude: -0.1990, organization_id: 3 },
+    ];
+
+    for (const responder of responders) {
+      await db.query(
+        `INSERT INTO responders (name, type, latitude, longitude, organization_id)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT DO NOTHING`,
+        [responder.name, responder.type, responder.latitude, responder.longitude, responder.organization_id]
+      );
+    }
+    console.log('Responder service: seeded default responders');
+  } else {
+    console.log('Responder service: responders already seeded');
+  }
+};
+
 const PORT = process.env.PORT || 4005;
 
 const start = async () => {
   try {
     await createRespondersTable();
+    await seedDefaultResponders();
     app.listen(PORT, () => {
       console.log(`Responder service running on port ${PORT}`);
     });

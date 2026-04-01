@@ -45,21 +45,27 @@ const createUsersTable = async () => {
 };
 
 const seedDefaultUsers = async () => {
-  const users = [
-    { name: 'Admin', email: 'admin@nerdcp.gh', password: 'admin123', role: 'Admin' },
-    { name: 'Police', email: 'police@nerdcp.gh', password: 'police123', role: 'Police' },
-    { name: 'Fire', email: 'fire@nerdcp.gh', password: 'fire123', role: 'Fire' },
-    { name: 'Hospital', email: 'hospital@nerdcp.gh', password: 'hospital123', role: 'Hospital' },
-  ];
+  const { rows } = await db.query('SELECT COUNT(*) FROM users');
+  if (rows[0].count === '0') {
+    const users = [
+      { name: 'Admin', email: 'admin@nerdcp.gh', password: 'admin123', role: 'Admin' },
+      { name: 'Police', email: 'police@nerdcp.gh', password: 'police123', role: 'Police' },
+      { name: 'Fire', email: 'fire@nerdcp.gh', password: 'fire123', role: 'Fire' },
+      { name: 'Hospital', email: 'hospital@nerdcp.gh', password: 'hospital123', role: 'Hospital' },
+    ];
 
-  for (const user of users) {
-    const hash = await bcrypt.hash(user.password, 10);
-    await db.query(
-      `INSERT INTO users (name, email, password_hash, role, organization_id)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (email) DO NOTHING`,
-      [user.name, user.email, hash, user.role, null]
-    );
+    for (const user of users) {
+      const hash = await bcrypt.hash(user.password, 10);
+      await db.query(
+        `INSERT INTO users (name, email, password_hash, role, organization_id)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (email) DO NOTHING`,
+        [user.name, user.email, hash, user.role, null]
+      );
+    }
+    console.log('Auth service: seeded default users');
+  } else {
+    console.log('Auth service: users already seeded');
   }
 };
 

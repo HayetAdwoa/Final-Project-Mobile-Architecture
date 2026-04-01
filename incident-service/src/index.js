@@ -48,8 +48,71 @@ const createIncidentsTable = async () => {
   await db.query(createTableQuery);
 };
 
+const seedDefaultIncidents = async () => {
+  const { rows } = await db.query('SELECT COUNT(*) FROM incidents');
+  if (rows[0].count === '0') {
+    const incidents = [
+      {
+        citizen_name: 'John Doe',
+        citizen_phone: '+233501234567',
+        incident_type: 'Medical',
+        latitude: 5.6037,
+        longitude: -0.1870,
+        location_description: 'Accra Central',
+        notes: 'Found unconscious near the market.',
+        created_by: 'hospital@nerdcp.gh',
+        assigned_unit_id: 1,
+        assigned_unit_type: 'Hospital',
+        status: 'DISPATCHED',
+        dispatched_at: new Date().toISOString(),
+      },
+      {
+        citizen_name: 'Jane Smith',
+        citizen_phone: '+233502345678',
+        incident_type: 'Fire',
+        latitude: 5.6148,
+        longitude: -0.2050,
+        location_description: 'Kumasi Road',
+        notes: 'Kitchen fire at residential unit.',
+        created_by: 'fire@nerdcp.gh',
+        assigned_unit_id: 2,
+        assigned_unit_type: 'Fire',
+        status: 'CREATED',
+      },
+    ];
+
+    for (const incident of incidents) {
+      await db.query(
+        `INSERT INTO incidents (
+           citizen_name, citizen_phone, incident_type, latitude, longitude,
+           location_description, notes, created_by, assigned_unit_id,
+           assigned_unit_type, status, dispatched_at, created_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())`,
+        [
+          incident.citizen_name,
+          incident.citizen_phone,
+          incident.incident_type,
+          incident.latitude,
+          incident.longitude,
+          incident.location_description,
+          incident.notes,
+          incident.created_by,
+          incident.assigned_unit_id,
+          incident.assigned_unit_type,
+          incident.status,
+          incident.dispatched_at || null,
+        ]
+      );
+    }
+    console.log('Incident service: seeded default incidents');
+  } else {
+    console.log('Incident service: incidents already seeded');
+  }
+};
+
 async function start() {
   await createIncidentsTable();
+  await seedDefaultIncidents();
   await connectRabbitMQ();
 
   const PORT = process.env.PORT || 4002;
