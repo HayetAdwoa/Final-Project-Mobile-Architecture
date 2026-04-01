@@ -18,14 +18,4 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
-app.options('/*', cors(corsOptions));
-app.use(express.json());
 
-app.use('/responders', responderRoutes);
-
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
-
-const PORT = process.env.PORT || 4005;
-app.listen(PORT, () => {
-  console.log(`Responder service running on port ${PORT}`);
-});
