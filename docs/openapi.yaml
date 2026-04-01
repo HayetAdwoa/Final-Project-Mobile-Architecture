@@ -1,0 +1,745 @@
+openapi: 3.0.3
+info:
+  title: NERDCP Emergency Platform API
+  description: |-
+    Swagger / OpenAPI documentation for the NERDCP backend microservices.
+    This document covers the Auth, Incident, Responder, Dispatch, and Analytics services.
+  version: 1.0.0
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Auth Service
+      servers:
+        - url: http://localhost:4001
+          description: Auth service (local)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Missing required fields
+        '409':
+          description: Email already in use
+        '500':
+          description: Internal server error
+  /auth/login:
+    post:
+      summary: Authenticate and receive a JWT
+      tags:
+        - Auth Service
+      servers:
+        - url: http://localhost:4001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+        '401':
+          description: Invalid credentials
+        '500':
+          description: Internal server error
+  /auth/profile:
+    get:
+      summary: Retrieve authenticated user profile
+      tags:
+        - Auth Service
+      servers:
+        - url: http://localhost:4001
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Invalid or expired token
+        '500':
+          description: Internal server error
+  /incidents:
+    post:
+      summary: Create a new incident report
+      tags:
+        - Incident Service
+      servers:
+        - url: http://localhost:4002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentCreate'
+      responses:
+        '201':
+          description: Incident created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '500':
+          description: Internal server error
+    get:
+      summary: List all incidents
+      tags:
+        - Incident Service
+      servers:
+        - url: http://localhost:4002
+      responses:
+        '200':
+          description: List of incidents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Incident'
+        '500':
+          description: Internal server error
+  /incidents/{id}:
+    get:
+      summary: Get a single incident by ID
+      tags:
+        - Incident Service
+      servers:
+        - url: http://localhost:4002
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Incident details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '404':
+          description: Incident not found
+        '500':
+          description: Internal server error
+    put:
+      summary: Update an incident status
+      tags:
+        - Incident Service
+      servers:
+        - url: http://localhost:4002
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: RESOLVED
+      responses:
+        '200':
+          description: Updated incident
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '500':
+          description: Internal server error
+  /responders:
+    post:
+      summary: Register a new responder unit
+      tags:
+        - Responder Service
+      servers:
+        - url: http://localhost:4005
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResponderCreate'
+      responses:
+        '201':
+          description: Responder created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Responder'
+        '500':
+          description: Internal server error
+    get:
+      summary: List all responders
+      tags:
+        - Responder Service
+      servers:
+        - url: http://localhost:4005
+      responses:
+        '200':
+          description: List of responders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Responder'
+        '500':
+          description: Internal server error
+  /responders/nearest:
+    get:
+      summary: Find nearest available responder
+      tags:
+        - Responder Service
+      servers:
+        - url: http://localhost:4005
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            format: float
+        - name: lon
+          in: query
+          required: true
+          schema:
+            type: number
+            format: float
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Nearest responder found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NearestResponderResponse'
+        '400':
+          description: Missing lat or lon
+        '404':
+          description: No available responders found
+        '500':
+          description: Internal server error
+  /responders/{id}/status:
+    put:
+      summary: Update responder status
+      tags:
+        - Responder Service
+      servers:
+        - url: http://localhost:4005
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: AVAILABLE
+      responses:
+        '200':
+          description: Responder updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Responder'
+        '500':
+          description: Internal server error
+  /analytics/response-times:
+    get:
+      summary: Get analytics response time metrics
+      tags:
+        - Analytics Service
+      servers:
+        - url: http://localhost:4004
+      responses:
+        '200':
+          description: Response times by incident type
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnalyticsResponseTimesItem'
+        '500':
+          description: Internal server error
+  /analytics/incidents-by-type:
+    get:
+      summary: Get incident counts grouped by type
+      tags:
+        - Analytics Service
+      servers:
+        - url: http://localhost:4004
+      responses:
+        '200':
+          description: Incident counts by type
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnalyticsIncidentsByTypeItem'
+        '500':
+          description: Internal server error
+  /analytics/resource-utilization:
+    get:
+      summary: Get resource utilization statistics
+      tags:
+        - Analytics Service
+      servers:
+        - url: http://localhost:4004
+      responses:
+        '200':
+          description: Resource utilization metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnalyticsResourceUtilizationItem'
+        '500':
+          description: Internal server error
+  /analytics/summary:
+    get:
+      summary: Get analytics summary metrics
+      tags:
+        - Analytics Service
+      servers:
+        - url: http://localhost:4004
+      responses:
+        '200':
+          description: Summary metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSummary'
+        '500':
+          description: Internal server error
+  /vehicles/register:
+    post:
+      summary: Register a new dispatch vehicle
+      tags:
+        - Dispatch Service
+      servers:
+        - url: http://localhost:4003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRegister'
+      responses:
+        '201':
+          description: Vehicle registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+        '500':
+          description: Internal server error
+  /vehicles:
+    get:
+      summary: List all registered vehicles
+      tags:
+        - Dispatch Service
+      servers:
+        - url: http://localhost:4003
+      responses:
+        '200':
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
+        '500':
+          description: Internal server error
+  /vehicles/{id}/location:
+    post:
+      summary: Record a vehicle location update
+      tags:
+        - Dispatch Service
+      servers:
+        - url: http://localhost:4003
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleLocationCreate'
+      responses:
+        '201':
+          description: Location update saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '500':
+          description: Internal server error
+    get:
+      summary: List recent location updates for a vehicle
+      tags:
+        - Dispatch Service
+      servers:
+        - url: http://localhost:4003
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recent location updates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VehicleLocation'
+        '500':
+          description: Internal server error
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UserRegister:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - role
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        role:
+          type: string
+          enum: [Admin, Police, Fire, Hospital]
+        organization_id:
+          type: integer
+          nullable: true
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    UserProfile:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+        organization_id:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+    IncidentCreate:
+      type: object
+      required:
+        - citizen_name
+        - citizen_phone
+        - incident_type
+        - latitude
+        - longitude
+        - location_description
+      properties:
+        citizen_name:
+          type: string
+        citizen_phone:
+          type: string
+        incident_type:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        location_description:
+          type: string
+        notes:
+          type: string
+        created_by:
+          type: string
+    Incident:
+      type: object
+      properties:
+        incident_id:
+          type: integer
+        citizen_name:
+          type: string
+        citizen_phone:
+          type: string
+        incident_type:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        location_description:
+          type: string
+        notes:
+          type: string
+        created_by:
+          type: string
+        assigned_unit_id:
+          type: integer
+          nullable: true
+        assigned_unit_type:
+          type: string
+          nullable: true
+        status:
+          type: string
+        dispatched_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    ResponderCreate:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Police, Fire, Hospital]
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        organization_id:
+          type: integer
+          nullable: true
+    Responder:
+      type: object
+      properties:
+        responder_id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        organization_id:
+          type: integer
+          nullable: true
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    NearestResponderResponse:
+      type: object
+      properties:
+        unitId:
+          type: integer
+        unitType:
+          type: string
+        name:
+          type: string
+        distanceMeters:
+          type: integer
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+    AnalyticsResponseTimesItem:
+      type: object
+      properties:
+        incident_type:
+          type: string
+        total:
+          type: integer
+        avg_response_seconds:
+          type: number
+        min_response_seconds:
+          type: number
+        max_response_seconds:
+          type: number
+    AnalyticsIncidentsByTypeItem:
+      type: object
+      properties:
+        incident_type:
+          type: string
+        total:
+          type: integer
+    AnalyticsResourceUtilizationItem:
+      type: object
+      properties:
+        assigned_unit_type:
+          type: string
+        total_assignments:
+          type: integer
+        total_resolved:
+          type: integer
+        avg_resolution_seconds:
+          type: number
+    AnalyticsSummary:
+      type: object
+      properties:
+        total_incidents:
+          type: integer
+        total_dispatched:
+          type: integer
+        total_resolved:
+          type: integer
+        avg_response_seconds:
+          type: number
+    VehicleRegister:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        registration_number:
+          type: string
+        description:
+          type: string
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        registration_number:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    VehicleLocationCreate:
+      type: object
+      properties:
+        incident_id:
+          type: integer
+          nullable: true
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        accuracy_meters:
+          type: number
+          nullable: true
+    VehicleLocation:
+      type: object
+      properties:
+        vehicle_id:
+          type: string
+        incident_id:
+          type: integer
+          nullable: true
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        accuracy_meters:
+          type: number
+          nullable: true
+        recorded_at:
+          type: string
+          format: date-time
