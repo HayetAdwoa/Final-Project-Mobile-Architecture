@@ -3,11 +3,22 @@ require('dotenv').config();
 
 let channel = null;
 let connection = null;
+let rabbitEnabled = true;
 
 async function connectRabbitMQ() {
   if (channel) return channel;
 
-  connection = await amqp.connect(process.env.RABBITMQ_URL);
+  const rabbitUrl = process.env.RABBITMQ_URL?.trim();
+  if (!rabbitUrl) {
+    rabbitEnabled = false;
+    console.warn('RabbitMQ disabled: RABBITMQ_URL is not set. Events will not be consumed.');
+    return null;
+  }
+  if (!/^amqps?:\/\//.test(rabbitUrl)) {
+    throw new Error(`Invalid RABBITMQ_URL protocol: ${rabbitUrl}. Expected amqp:// or amqps://`);
+  }
+
+  connection = await amqp.connect(rabbitUrl);
   channel = await connection.createChannel();
   await channel.assertExchange('emergency.platform.events', 'topic', { durable: true });
 

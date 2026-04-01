@@ -2,17 +2,55 @@ const amqp = require('amqplib');
 require('dotenv').config();
 
 let channel = null;
+let connection = null;
+let rabbitEnabled = true;
 
 async function connectRabbitMQ() {
   if (channel) return channel;
-  const conn = await amqp.connect(process.env.RABBITMQ_URL);
-  channel = await conn.createChannel();
+
+  const rabbitUrl = process.env.RABBITMQ_URL?.trim();
+  if (!rabbitUrl) {
+    rabbitEnabled = false;
+    console.warn('RabbitMQ disabled: RABBITMQ_URL is not set. Events will not be published.');
+    return null;
+  }
+  if (!/^amqps?:\/\//.test(rabbitUrl)) {
+    throw new Error(`Invalid RABBITMQ_URL protocol: ${rabbitUrl}. Expected amqp:// or amqps://`);
+  }
+
+  connection = await amqp.connect(rabbitUrl);
+  channel = await connection.createChannel();
   await channel.assertExchange('emergency.platform.events', 'topic', { durable: true });
+
+  connection.on('error', (err) => {
+    console.error('RabbitMQ connection error:', err.message);
+    channel = null;
+    connection = null;
+    setTimeout(connectRabbitMQ, 3000);
+  });
+  connection.on('close', () => {
+    console.warn('RabbitMQ connection closed, reconnecting...');
+    channel = null;
+    connection = null;
+    setTimeout(connectRabbitMQ, 3000);
+  });
+
+  console.log('Connected to RabbitMQ');
   return channel;
 }
 
 async function publishEvent(routingKey, payload) {
+  if (!rabbitEnabled) {
+    console.warn(`Skipping RabbitMQ publish: ${routingKey} - RabbitMQ is disabled.`);
+    return;
+  }
+
   const ch = await connectRabbitMQ();
+  if (!ch) {
+    console.warn(`Cannot publish ${routingKey}: RabbitMQ channel unavailable.`);
+    return;
+  }
+
   const msg = Buffer.from(JSON.stringify(payload));
   ch.publish('emergency.platform.events', routingKey, msg, { persistent: true });
   console.log(`Published event: ${routingKey}`);

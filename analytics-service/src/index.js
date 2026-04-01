@@ -6,6 +6,25 @@ const { connectRabbitMQ } = require('./mq');
 const db = require('./db');
 const analyticsRoutes = require('./routes/analytics');
 
+const createIncidentEventsTable = async () => {
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS incident_events (
+      incident_id INTEGER PRIMARY KEY,
+      incident_type VARCHAR(100),
+      latitude DOUBLE PRECISION,
+      longitude DOUBLE PRECISION,
+      created_at TIMESTAMP WITH TIME ZONE,
+      assigned_unit_id INTEGER,
+      assigned_unit_type VARCHAR(100),
+      dispatched_at TIMESTAMP WITH TIME ZONE,
+      resolved_at TIMESTAMP WITH TIME ZONE,
+      response_time_seconds DOUBLE PRECISION,
+      resolution_time_seconds DOUBLE PRECISION
+    );
+  `;
+  await db.query(createTableQuery);
+};
+
 async function handleIncidentEvent(e) {
   const { eventType, incidentId } = e;
 
@@ -47,6 +66,7 @@ async function handleIncidentEvent(e) {
 }
 
 async function start() {
+  await createIncidentEventsTable();
   const ch = await connectRabbitMQ();
 
   const q = 'analytics-incident-events';
