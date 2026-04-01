@@ -13,7 +13,10 @@ async function start() {
   await connectRabbitMQ();
 
   const app = express();
-  app.use(cors());
+  app.use(cors({
+  origin: ['https://demo-frontend-busc.onrender.com', 'http://localhost:5173'],
+  credentials: true
+}))
   app.use(express.json());
 
   app.use('/vehicles', vehicleRoutes);
