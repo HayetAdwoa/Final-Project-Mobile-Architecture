@@ -13,10 +13,20 @@ async function start() {
   await connectRabbitMQ();
 
   const app = express();
-  app.use(cors({
-  origin: ['https://demo-frontend-busc.onrender.com', 'http://localhost:5173'],
-  credentials: true
-}))
+  const frontendUrl = process.env.FRONTEND_URL;
+  const allowedOrigins = [frontendUrl, 'http://localhost:5173'].filter(Boolean);
+  const corsOptions = {
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy does not allow access from origin ${origin}`));
+      }
+    },
+    credentials: true,
+  };
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions));
   app.use(express.json());
 
   app.use('/vehicles', vehicleRoutes);

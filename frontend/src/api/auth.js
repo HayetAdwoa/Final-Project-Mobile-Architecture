@@ -20,7 +20,7 @@ if (!AUTH_BASE_URL) {
   }
 }
 
-const authClient = axios.create({ baseURL: AUTH_BASE_URL || '/auth' })
+const authClient = axios.create({ baseURL: AUTH_BASE_URL ? `${AUTH_BASE_URL}/auth` : '/auth' })
 
 export async function loginUser(email, password) {
   const res = await authClient.post('/login', { email, password })
